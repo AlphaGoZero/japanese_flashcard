@@ -48,9 +48,7 @@ export const deckAPI = {
   getAll: (params?: { jlpt?: string; category?: string }) =>
     api.get('/functions/v1/decks-list', { params }),
   getById: (id: string) => api.get(`/functions/v1/decks-get?id=${id}`),
-  getStats: async () => {
-    return { data: { data: { total: 0, mastered: 0, learning: 0, new: 0 } } };
-  },
+  getStats: (id: string) => api.get(`/functions/v1/decks-stats?id=${id}`),
 };
 
 // Cards
@@ -96,13 +94,11 @@ export const quizAPI = {
 // Games
 export const gameAPI = {
   start: (data: { deckId: string; gameType: string }) =>
-    api.get('/functions/v1/games-start', { params: data }),
-  submit: async () => {
-    return { data: { data: { id: 'mock' } } };
-  },
-  getHistory: async () => {
-    return { data: { data: [] } };
-  },
+    api.post('/functions/v1/games-start', data),
+  submit: (data: { deckId: string; gameType: string; score: number; timeTakenSeconds: number }) =>
+    api.post('/functions/v1/games-submit', data),
+  getHistory: () =>
+    api.get('/functions/v1/games-history'),
 };
 
 export default api;

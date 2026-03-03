@@ -63,10 +63,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   checkAuth: async () => {
-    // First check for existing token
-    const token = localStorage.getItem('token');
-    
-    // Try to get session from Supabase (handles OAuth callback)
+    // Try to get session from Supabase (handles OAuth callback with hash fragment)
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session?.access_token) {
@@ -85,6 +82,11 @@ export const useAuthStore = create<AuthState>((set) => ({
             isAuthenticated: true,
             isLoading: false,
           });
+          
+          // Clear the URL hash after successful auth
+          if (window.location.hash) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
           return;
         }
       } catch (e) {
@@ -93,6 +95,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     // Fallback to token-based auth
+    const token = localStorage.getItem('token');
     if (token) {
       try {
         const response = await authAPI.me();

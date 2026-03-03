@@ -5,11 +5,19 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+const getSiteUrl = () => {
+  // Dynamically get the current site URL (works in both dev and production)
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return supabaseUrl;
+};
+
 export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/dashboard`,
+      redirectTo: `${getSiteUrl()}/dashboard`,
     },
   });
   

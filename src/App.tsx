@@ -50,17 +50,19 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 function App() {
-  const { checkAuth } = useAuthStore();
+  const { checkAuth, isLoading } = useAuthStore();
 
   useEffect(() => {
-    let mounted = true;
-    checkAuth().then(() => {
-      if (!mounted) {
-        // Component unmounted, don't update state
-      }
-    });
-    return () => { mounted = false; };
+    checkAuth();
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <OfflineProvider>

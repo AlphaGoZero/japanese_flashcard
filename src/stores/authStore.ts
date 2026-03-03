@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { authAPI } from '../services/api';
-import { supabase, getCurrentUser } from '../services/supabase';
+import { supabase } from '../services/supabase';
 
 interface User {
   id: string;
@@ -22,96 +21,93 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  token: localStorage.getItem('token'),
+  token: null,
   isLoading: true,
   isAuthenticated: false,
 
   login: async (email: string, password: string) => {
-    const response = await authAPI.login({ email, password });
-    const { user, token } = response.data.data;
-    if (!token) {
-      throw new Error('No token received');
-    }
-    localStorage.setItem('token', token);
-    set({ user, token, isAuthenticated: true });
-    return user;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    if (!data.session || !data.user) throw new Error('No session created');
+    
+    localStorage.setItem('token', data.session.access_token);
+    set({ 
+      user: {
+        id: data.user.id,
+        email: data.user.email || '',
+        displayName: data.user.user_metadata?.display_name || data.user.email?.split('@')[0] || null,
+        avatarUrl: data.user.user_metadata?.avatar_url || null,
+      },
+      token: data.session.access_token,
+      isAuthenticated: true
+    });
   },
 
   register: async (email: string, password: string, displayName?: string) => {
-    try {
-      const response = await authAPI.register({ email, password, displayName });
-      const { user, token } = response.data.data;
-      if (!token) {
-        throw new Error('No token received from server');
-      }
-      localStorage.setItem('token', token);
-      set({ user, token, isAuthenticated: true });
-    } catch (error: any) {
-      console.error('Register error:', error.response?.data || error.message);
-      throw error;
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: { data: { display_name: displayName || email.split('@')[0] } }
+    });
+    if (error) throw error;
+    
+    // If auto-confirm is enabled, log them in
+    if (data.session && data.user) {
+      localStorage.setItem('token', data.session.access_token);
+      set({ 
+        user: {
+          id: data.user.id,
+          email: data.user.email || '',
+          displayName: displayName || email.split('@')[0],
+          avatarUrl: null,
+        },
+        token: data.session.access_token,
+        isAuthenticated: true
+      });
+    } else {
+      // Need email confirmation
+      set({ isLoading: false });
     }
   },
 
   logout: async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      // Ignore logout errors
-    }
+    await supabase.auth.signOut();
     localStorage.removeItem('token');
     set({ user: null, token: null, isAuthenticated: false });
   },
 
   checkAuth: async () => {
-    // Try to get session from Supabase (handles OAuth callback with hash fragment)
+    // Get session from Supabase
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session?.access_token) {
       localStorage.setItem('token', session.access_token);
-      try {
-        const user = await getCurrentUser();
-        if (user) {
-          set({
-            user: {
-              id: user.id,
-              email: user.email || '',
-              displayName: user.user_metadata?.display_name || user.email?.split('@')[0] || null,
-              avatarUrl: user.user_metadata?.avatar_url || null,
-            },
-            token: session.access_token,
-            isAuthenticated: true,
-            isLoading: false,
-          });
-          
-          // Clear the URL hash after successful auth
-          if (window.location.hash) {
-            window.history.replaceState(null, '', window.location.pathname);
-          }
-          return;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        set({
+          user: {
+            id: user.id,
+            email: user.email || '',
+            displayName: user.user_metadata?.display_name || user.email?.split('@')[0] || null,
+            avatarUrl: user.user_metadata?.avatar_url || null,
+          },
+          token: session.access_token,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+        
+        // Clear URL hash after OAuth callback
+        if (window.location.hash.includes('access_token')) {
+          window.history.replaceState(null, '', window.location.pathname);
         }
-      } catch (e) {
-        // Session invalid
+        return;
       }
     }
 
-    // Fallback to token-based auth
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const response = await authAPI.me();
-        set({
-          user: response.data.data.user,
-          isAuthenticated: true,
-          isLoading: false,
-          token,
-        });
-      } catch (error: any) {
-        console.error('checkAuth failed:', error);
-        localStorage.removeItem('token');
-        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
-      }
-    } else {
-      set({ isLoading: false, isAuthenticated: false });
-    }
+    // No valid session
+    localStorage.removeItem('token');
+    set({ user: null, token: null, isAuthenticated: false, isLoading: false });
   },
 }));

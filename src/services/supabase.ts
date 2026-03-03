@@ -6,12 +6,10 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const signInWithGoogle = async () => {
-  const siteUrl = typeof window !== 'undefined' ? window.location.origin : supabaseUrl;
-  
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${siteUrl}/dashboard`,
+      redirectTo: 'https://japanese-flashcard-taupe.vercel.app/dashboard',
     },
   });
   

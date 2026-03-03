@@ -39,7 +39,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         avatarUrl: data.user.user_metadata?.avatar_url || null,
       },
       token: data.session.access_token,
-      isAuthenticated: true
+      isAuthenticated: true,
+      isLoading: false
     });
   },
 
@@ -51,7 +52,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
     if (error) throw error;
     
-    // If auto-confirm is enabled, log them in
     if (data.session && data.user) {
       localStorage.setItem('token', data.session.access_token);
       set({ 
@@ -62,10 +62,10 @@ export const useAuthStore = create<AuthState>((set) => ({
           avatarUrl: null,
         },
         token: data.session.access_token,
-        isAuthenticated: true
+        isAuthenticated: true,
+        isLoading: false
       });
     } else {
-      // Need email confirmation
       set({ isLoading: false });
     }
   },
@@ -73,16 +73,44 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('token');
-    set({ user: null, token: null, isAuthenticated: false });
+    set({ user: null, token: null, isAuthenticated: false, isLoading: false });
   },
 
   checkAuth: async () => {
-    // Get session from Supabase
+    // Handle OAuth callback - tokens might be in URL hash
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    
+    if (accessToken) {
+      // Extract and set session from URL hash
+      localStorage.setItem('token', accessToken);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        set({
+          user: {
+            id: user.id,
+            email: user.email || '',
+            displayName: user.user_metadata?.display_name || user.email?.split('@')[0] || null,
+            avatarUrl: user.user_metadata?.avatar_url || null,
+          },
+          token: accessToken,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+        
+        // Clear URL hash
+        window.history.replaceState(null, '', window.location.pathname);
+        return;
+      }
+    }
+
+    // Check for existing session
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session?.access_token) {
       localStorage.setItem('token', session.access_token);
-      
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
@@ -97,16 +125,10 @@ export const useAuthStore = create<AuthState>((set) => ({
           isAuthenticated: true,
           isLoading: false,
         });
-        
-        // Clear URL hash after OAuth callback
-        if (window.location.hash.includes('access_token')) {
-          window.history.replaceState(null, '', window.location.pathname);
-        }
         return;
       }
     }
 
-    // No valid session
     localStorage.removeItem('token');
     set({ user: null, token: null, isAuthenticated: false, isLoading: false });
   },

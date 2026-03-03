@@ -53,8 +53,14 @@ function App() {
   const { checkAuth } = useAuthStore();
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    let mounted = true;
+    checkAuth().then(() => {
+      if (!mounted) {
+        // Component unmounted, don't update state
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
 
   return (
     <OfflineProvider>

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { deckAPI } from '../services/api';
+import { supabase } from '../services/supabase';
 
 interface Card {
   id: string;
@@ -50,8 +50,31 @@ export const useDeckStore = create<DeckState>((set) => ({
   fetchDecks: async (params) => {
     set({ isLoading: true });
     try {
-      const response = await deckAPI.getAll(params);
-      set({ decks: response.data.data, isLoading: false });
+      let query = supabase.from('decks').select('*');
+      
+      if (params?.jlpt) {
+        query = query.eq('jlpt_level', params.jlpt);
+      }
+      if (params?.category) {
+        query = query.eq('category', params.category);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      const decks = (data || []).map((deck: any) => ({
+        id: deck.id,
+        name: deck.name,
+        description: deck.description,
+        jlptLevel: deck.jlpt_level,
+        category: deck.category,
+        cardCount: deck.card_count,
+        isPremium: deck.is_premium,
+        createdAt: deck.created_at,
+      }));
+      
+      set({ decks, isLoading: false });
     } catch (error) {
       console.error('Failed to fetch decks:', error);
       set({ isLoading: false });
@@ -61,8 +84,29 @@ export const useDeckStore = create<DeckState>((set) => ({
   fetchDeck: async (id: string) => {
     set({ isLoading: true });
     try {
-      const response = await deckAPI.getById(id);
-      set({ currentDeck: response.data.data, isLoading: false });
+      const { data: deck, error } = await supabase
+        .from('decks')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      const { data: cards } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('deck_id', id);
+      
+      set({ 
+        currentDeck: { 
+          ...deck, 
+          cards: cards || [],
+          jlptLevel: deck.jlpt_level,
+          cardCount: deck.card_count,
+          createdAt: deck.created_at,
+        }, 
+        isLoading: false 
+      });
     } catch (error) {
       console.error('Failed to fetch deck:', error);
       set({ isLoading: false });
@@ -71,8 +115,14 @@ export const useDeckStore = create<DeckState>((set) => ({
 
   fetchDeckStats: async (id: string) => {
     try {
-      const response = await deckAPI.getStats(id);
-      set({ deckStats: response.data.data });
+      const { data, error } = await supabase
+        .from('cards')
+        .select('id', { count: 'exact' })
+        .eq('deck_id', id);
+      
+      if (error) throw error;
+      
+      set({ deckStats: { total: data?.length || 0, mastered: 0, learning: 0, new: 0 } });
     } catch (error) {
       console.error('Failed to fetch deck stats:', error);
     }

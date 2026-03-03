@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { quizAPI } from '../services/api';
+import { supabase } from '../services/supabase';
 
 interface Question {
   cardId: string;
@@ -45,11 +45,69 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   startQuiz: async (deckId: string, quizType: string, count = 10) => {
     set({ isLoading: true });
     try {
-      const response = await quizAPI.start({ deckId, quizType, count });
-      const { deck, questions } = response.data.data;
+      // Get cards from deck
+      const { data: cards, error } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('deck_id', deckId)
+        .limit(count);
+
+      if (error || !cards || cards.length === 0) {
+        console.error('No cards found');
+        set({ isLoading: false });
+        return;
+      }
+
+      // Get deck name
+      const { data: deck } = await supabase
+        .from('decks')
+        .select('name')
+        .eq('id', deckId)
+        .single();
+
+      // Generate questions based on quiz type
+      const questions: Question[] = cards.map((card: any) => {
+        if (quizType === 'multiple_choice') {
+          // Get wrong answers from other cards
+          const wrongAnswers = cards
+            .filter((c: any) => c.id !== card.id)
+            .slice(0, 3)
+            .map((c: any) => c.english);
+          
+          const options = [card.english, ...wrongAnswers].sort(() => Math.random() - 0.5);
+          
+          return {
+            cardId: card.id,
+            type: 'multiple_choice',
+            japanese: card.japanese,
+            hiragana: card.hiragana,
+            options,
+            correctAnswer: card.english,
+          };
+        } else if (quizType === 'typing') {
+          return {
+            cardId: card.id,
+            type: 'typing',
+            japanese: card.japanese,
+            hiragana: card.hiragana,
+            correctAnswer: card.english,
+          };
+        } else {
+          // Default to multiple choice
+          return {
+            cardId: card.id,
+            type: 'multiple_choice',
+            japanese: card.japanese,
+            hiragana: card.hiragana,
+            options: [card.english, 'wrong1', 'wrong2', 'wrong3'],
+            correctAnswer: card.english,
+          };
+        }
+      });
+
       set({
         deckId,
-        deckName: deck.name,
+        deckName: deck?.name || 'Quiz',
         quizType,
         questions,
         currentIndex: 0,
@@ -79,36 +137,45 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   },
 
   submitQuiz: async () => {
-    const { deckId, quizType, answers, startTime } = get();
+    const { deckId, quizType, answers, questions, startTime } = get();
     if (!deckId || !quizType || !startTime) return;
 
     const timeTaken = Math.round((Date.now() - startTime) / 1000);
-    const answerList = Array.from(answers.entries()).map(([cardId, answer]) => ({
-      cardId,
-      answer,
-    }));
+    
+    // Calculate score
+    let score = 0;
+    questions.forEach((q) => {
+      const userAnswer = answers.get(q.cardId);
+      if (userAnswer?.toLowerCase() === q.correctAnswer.toLowerCase()) {
+        score++;
+      }
+    });
 
-    set({ isLoading: true });
+    // Save to database
     try {
-      const response = await quizAPI.submit({
-        deckId,
-        quizType,
-        answers: answerList,
-        timeTakenSeconds: timeTaken,
-      });
-
-      set({
-        result: {
-          score: response.data.data.score,
-          total: response.data.data.total,
-          timeTaken,
-        },
-        isLoading: false,
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('quiz_results').insert({
+          user_id: user.id,
+          deck_id: deckId,
+          quiz_type: quizType,
+          score,
+          total_questions: questions.length,
+          time_taken_seconds: timeTaken,
+        });
+      }
     } catch (error) {
-      console.error('Failed to submit quiz:', error);
-      set({ isLoading: false });
+      console.error('Failed to save quiz result:', error);
     }
+
+    set({
+      result: {
+        score,
+        total: questions.length,
+        timeTaken,
+      },
+      isLoading: false,
+    });
   },
 
   resetQuiz: () => {

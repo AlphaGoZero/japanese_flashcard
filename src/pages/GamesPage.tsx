@@ -5,7 +5,6 @@ import { Layout } from '../components/layout/Layout';
 import { Card, CardContent } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { useDeckStore } from '../stores/deckStore';
-import { gameAPI } from '../services/api';
 
 interface GameCard {
   id: string;
@@ -88,6 +87,7 @@ export const GamesPage: React.FC = () => {
 
 const TimedChallenge: React.FC<{ deckId: string; onExit: () => void }> = ({ deckId, onExit }) => {
   const navigate = useNavigate();
+  const { currentDeck, fetchDeck } = useDeckStore();
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -98,12 +98,33 @@ const TimedChallenge: React.FC<{ deckId: string; onExit: () => void }> = ({ deck
   const [gameOver, setGameOver] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    fetchDeck(deckId);
+  }, [deckId]);
+
   const startGame = async () => {
     setIsLoading(true);
     try {
-      const response = await gameAPI.start({ deckId, gameType: 'timed_challenge' });
-      setQuestions(response.data.data.questions);
-      setGameStarted(true);
+      // Get cards from current deck and generate questions locally
+      const deckCards = currentDeck?.cards || [];
+      if (deckCards.length > 0) {
+        const shuffled = [...deckCards].sort(() => Math.random() - 0.5).slice(0, 10);
+        const questions = shuffled.map((card: any) => ({
+          cardId: card.id,
+          japanese: card.japanese,
+          hiragana: card.hiragana,
+          correctAnswer: card.english,
+          options: [
+            card.english,
+            ...deckCards
+              .filter((c: any) => c.id !== card.id)
+              .slice(0, 3)
+              .map((c: any) => c.english)
+          ].sort(() => Math.random() - 0.5)
+        }));
+        setQuestions(questions);
+        setGameStarted(true);
+      }
     } catch (error) {
       console.error('Failed to start game:', error);
     } finally {
@@ -117,7 +138,6 @@ const TimedChallenge: React.FC<{ deckId: string; onExit: () => void }> = ({ deck
       return () => clearTimeout(timer);
     } else if (timeLeft === 0 && gameStarted && !gameOver) {
       setGameOver(true);
-      gameAPI.submit({ deckId, gameType: 'timed_challenge', score, timeTakenSeconds: 60 }).catch(console.error);
     }
   }, [timeLeft, gameStarted, gameOver, score, deckId]);
 
@@ -137,8 +157,6 @@ const TimedChallenge: React.FC<{ deckId: string; onExit: () => void }> = ({ deck
         setCurrentIndex(i => i + 1);
       } else {
         setGameOver(true);
-        const finalScore = option === questions[currentIndex]?.correctAnswer ? score + 1 : score;
-        gameAPI.submit({ deckId, gameType: 'timed_challenge', score: finalScore, timeTakenSeconds: 60 - timeLeft }).catch(console.error);
       }
     }, 500);
   };
@@ -248,6 +266,7 @@ const TimedChallenge: React.FC<{ deckId: string; onExit: () => void }> = ({ deck
 
 const MatchingPairs: React.FC<{ deckId: string; onExit: () => void }> = ({ deckId, onExit }) => {
   const navigate = useNavigate();
+  const { currentDeck, fetchDeck } = useDeckStore();
   const [cards, setCards] = useState<GameCard[]>([]);
   const [flipped, setFlipped] = useState<string[]>([]);
   const [matched, setMatched] = useState<string[]>([]);
@@ -257,13 +276,36 @@ const MatchingPairs: React.FC<{ deckId: string; onExit: () => void }> = ({ deckI
   const [gameWon, setGameWon] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    fetchDeck(deckId);
+  }, [deckId]);
+
   const startGame = async () => {
     setIsLoading(true);
     try {
-      const response = await gameAPI.start({ deckId, gameType: 'matching_pairs' });
-      const shuffled = [...response.data.data.cards].sort(() => Math.random() - 0.5);
-      setCards(shuffled);
-      setGameStarted(true);
+      // Get cards from current deck and generate matching pairs locally
+      if (currentDeck?.cards && currentDeck.cards.length > 0) {
+        const selectedCards = [...currentDeck.cards].sort(() => Math.random() - 0.5).slice(0, 8);
+        const gameCards: GameCard[] = [];
+        
+        selectedCards.forEach((card: any) => {
+          gameCards.push({
+            id: `${card.id}-japanese`,
+            type: 'japanese',
+            value: card.japanese,
+            matchId: card.id,
+          });
+          gameCards.push({
+            id: `${card.id}-english`,
+            type: 'english',
+            value: card.english,
+            matchId: card.id,
+          });
+        });
+        
+        setCards(gameCards.sort(() => Math.random() - 0.5));
+        setGameStarted(true);
+      }
     } catch (error) {
       console.error('Failed to start game:', error);
     } finally {
@@ -291,7 +333,6 @@ const MatchingPairs: React.FC<{ deckId: string; onExit: () => void }> = ({ deckI
         
         if (matched.length + 1 === cards.length / 2) {
           setGameWon(true);
-          gameAPI.submit({ deckId, gameType: 'matching_pairs', score: score + 10, timeTakenSeconds: moves + 1 }).catch(console.error);
         }
       } else {
         setTimeout(() => setFlipped([]), 1000);

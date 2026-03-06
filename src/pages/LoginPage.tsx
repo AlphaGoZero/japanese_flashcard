@@ -23,8 +23,9 @@ export const LoginPage: React.FC = () => {
     try {
       await login(email, password);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -35,7 +36,7 @@ export const LoginPage: React.FC = () => {
     setIsGoogleLoading(true);
     try {
       await signInWithGoogle();
-    } catch (err: any) {
+    } catch {
       setError('Google login failed. Please try again.');
       setIsGoogleLoading(false);
     }

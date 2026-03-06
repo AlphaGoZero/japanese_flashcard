@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import { supabase } from '../services/supabase';
 
@@ -35,10 +36,12 @@ interface DeckState {
   currentDeck: Deck | null;
   deckStats: DeckStats | null;
   isLoading: boolean;
-  fetchDecks: (params?: { jlpt?: string; category?: string }) => Promise<void>;
+  sortBy: 'popular' | 'newest' | 'name' | 'cards';
+  fetchDecks: (params?: { jlpt?: string; category?: string; sort?: string }) => Promise<void>;
   fetchDeck: (id: string) => Promise<void>;
   fetchDeckStats: (id: string) => Promise<void>;
   clearCurrentDeck: () => void;
+  setSortBy: (sort: 'popular' | 'newest' | 'name' | 'cards') => void;
 }
 
 export const useDeckStore = create<DeckState>((set) => ({
@@ -46,6 +49,7 @@ export const useDeckStore = create<DeckState>((set) => ({
   currentDeck: null,
   deckStats: null,
   isLoading: false,
+  sortBy: 'popular',
 
   fetchDecks: async (params) => {
     set({ isLoading: true });
@@ -57,6 +61,23 @@ export const useDeckStore = create<DeckState>((set) => ({
       }
       if (params?.category) {
         query = query.eq('category', params.category);
+      }
+
+      const sortBy = params?.sort || 'popular';
+      
+      switch (sortBy) {
+        case 'popular':
+          query = query.order('popularity', { ascending: false });
+          break;
+        case 'newest':
+          query = query.order('created_at', { ascending: false });
+          break;
+        case 'name':
+          query = query.order('name', { ascending: true });
+          break;
+        case 'cards':
+          query = query.order('card_count', { ascending: false });
+          break;
       }
       
       const { data, error } = await query;
@@ -129,4 +150,6 @@ export const useDeckStore = create<DeckState>((set) => ({
   },
 
   clearCurrentDeck: () => set({ currentDeck: null, deckStats: null }),
+
+  setSortBy: (sort) => set({ sortBy: sort }),
 }));

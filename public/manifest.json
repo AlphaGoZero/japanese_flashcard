@@ -57,7 +57,65 @@
       "purpose": "maskable any"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Quick Review",
+      "short_name": "Review",
+      "description": "Start a quick review session",
+      "url": "/quick-review",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Daily Challenge",
+      "short_name": "Challenge",
+      "description": "Complete today's challenges",
+      "url": "/daily-challenge",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Study Kanji",
+      "short_name": "Kanji",
+      "description": "Learn new kanji characters",
+      "url": "/kanji",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Grammar Lessons",
+      "short_name": "Grammar",
+      "description": "Study grammar patterns",
+      "url": "/grammar",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
   "categories": ["education", "games"],
   "screenshots": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "android_package": "com.nihongoflash.app",
+  "android_app_links": [
+    {
+      "package": "com.nihongoflash.app",
+      "_sha256_fingerprints": []
+    }
+  ]
 }

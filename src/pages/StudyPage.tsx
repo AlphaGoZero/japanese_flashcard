@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, RotateCcw, Check } from 'lucide-react';
@@ -178,6 +179,7 @@ export const StudyPage: React.FC = () => {
         {/* Flashcard */}
         {currentCard && (
           <Flashcard
+            cardId={currentCard.id}
             japanese={currentCard.japanese}
             hiragana={currentCard.hiragana}
             english={currentCard.english}

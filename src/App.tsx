@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
@@ -9,7 +10,32 @@ import { DeckDetailPage } from './pages/DeckDetailPage';
 import { StudyPage } from './pages/StudyPage';
 import { QuizPage } from './pages/QuizPage';
 import { GamesPage } from './pages/GamesPage';
+import { ProgressPage } from './pages/ProgressPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { MyDecksPage } from './pages/MyDecksPage';
+import { MyDeckDetailPage } from './pages/MyDeckDetailPage';
+import { AchievementsPage } from './pages/AchievementsPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
+import { FavoritesPage } from './pages/FavoritesPage';
+import { DailyReviewPage } from './pages/DailyReviewPage';
+import { QuickReviewPage } from './pages/QuickReviewPage';
+import { LeaderboardPage } from './pages/LeaderboardPage';
+import { AvatarEditorPage } from './pages/AvatarEditorPage';
+import { KanjiPage } from './pages/KanjiPage';
+import { GrammarPage } from './pages/GrammarPage';
+import { CommunityPage } from './pages/CommunityPage';
+import { GroupsPage } from './pages/GroupsPage';
+import { WidgetsPage } from './pages/WidgetsPage';
+import { GenresPage } from './pages/GenresPage';
+import { JLPTExamsPage } from './pages/JLPTExamsPage';
+import { KanjiWritingPage } from './pages/KanjiWritingPage';
+import { SpeechPracticePage } from './pages/SpeechPracticePage';
+import { KanjiQuizPage } from './pages/KanjiQuizPage';
+import { ReadingPage } from './pages/ReadingPage';
+import { ListeningPage } from './pages/ListeningPage';
+import { ExchangePage } from './pages/ExchangePage';
 import { OfflineProvider } from './components/common/OfflineProvider';
+import { AchievementToast } from './components/achievements/AchievementToast';
 import { OfflineIndicator } from './components/common/OfflineIndicator';
 import { PWAInstallPrompt } from './components/common/PWAInstallPrompt';
 
@@ -96,6 +122,14 @@ function App() {
             }
           />
           <Route
+            path="/review"
+            element={
+              <ProtectedRoute>
+                <DailyReviewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/decks"
             element={
               <ProtectedRoute>
@@ -135,6 +169,230 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/progress"
+            element={
+              <ProtectedRoute>
+                <ProgressPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-decks"
+            element={
+              <ProtectedRoute>
+                <MyDecksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-decks/:id"
+            element={
+              <ProtectedRoute>
+                <MyDeckDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achievements"
+            element={
+              <ProtectedRoute>
+                <AchievementsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <AnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/favorites"
+            element={
+              <ProtectedRoute>
+                <FavoritesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quick-review"
+            element={
+              <ProtectedRoute>
+                <QuickReviewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quick-review/:deckId"
+            element={
+              <ProtectedRoute>
+                <QuickReviewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leaderboard"
+            element={
+              <ProtectedRoute>
+                <LeaderboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/avatar"
+            element={
+              <ProtectedRoute>
+                <AvatarEditorPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/kanji"
+            element={
+              <ProtectedRoute>
+                <KanjiPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/grammar"
+            element={
+              <ProtectedRoute>
+                <GrammarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/community"
+            element={
+              <ProtectedRoute>
+                <CommunityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/groups"
+            element={
+              <ProtectedRoute>
+                <GroupsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/widgets"
+            element={
+              <ProtectedRoute>
+                <WidgetsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/genres"
+            element={
+              <ProtectedRoute>
+                <GenresPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/study/genre/:genreSlug"
+            element={
+              <ProtectedRoute>
+                <StudyPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jlpt"
+            element={
+              <ProtectedRoute>
+                <JLPTExamsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jlpt/:examId"
+            element={
+              <ProtectedRoute>
+                <JLPTExamsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/kanji/write"
+            element={
+              <ProtectedRoute>
+                <KanjiWritingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/speech"
+            element={
+              <ProtectedRoute>
+                <SpeechPracticePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/kanji/quiz"
+            element={
+              <ProtectedRoute>
+                <KanjiQuizPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reading"
+            element={
+              <ProtectedRoute>
+                <ReadingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reading/:passageId"
+            element={
+              <ProtectedRoute>
+                <ReadingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/listening"
+            element={
+              <ProtectedRoute>
+                <ListeningPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/listening/:lessonId"
+            element={
+              <ProtectedRoute>
+                <ListeningPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/exchange"
+            element={
+              <ProtectedRoute>
+                <ExchangePage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Redirects */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -145,6 +403,7 @@ function App() {
       {/* PWA Components */}
       <OfflineIndicator />
       <PWAInstallPrompt />
+      <AchievementToast onClose={() => {}} />
     </OfflineProvider>
   );
 }

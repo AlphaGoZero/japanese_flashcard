@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, RotateCcw, Trophy, Zap, Grid, Play } from 'lucide-react';
@@ -5,12 +6,28 @@ import { Layout } from '../components/layout/Layout';
 import { Card, CardContent } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { useDeckStore } from '../stores/deckStore';
+import { supabase } from '../services/supabase';
 
 interface GameCard {
   id: string;
   type: 'japanese' | 'english';
   value: string;
   matchId: string;
+}
+
+interface TimedQuestion {
+  cardId: string;
+  japanese: string;
+  hiragana: string;
+  correctAnswer: string;
+  options: string[];
+}
+
+interface DeckCard {
+  id: string;
+  japanese: string;
+  hiragana: string;
+  english: string;
 }
 
 const gameTypes = [
@@ -88,7 +105,7 @@ export const GamesPage: React.FC = () => {
 const TimedChallenge: React.FC<{ deckId: string; onExit: () => void }> = ({ deckId, onExit }) => {
   const navigate = useNavigate();
   const { currentDeck, fetchDeck } = useDeckStore();
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<TimedQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
@@ -102,14 +119,24 @@ const TimedChallenge: React.FC<{ deckId: string; onExit: () => void }> = ({ deck
     fetchDeck(deckId);
   }, [deckId]);
 
+  useEffect(() => {
+    if (gameOver && score > 0) {
+      supabase.from('game_results').insert({
+        deck_id: deckId,
+        game_type: 'timed_challenge',
+        score,
+        time_taken_seconds: 60,
+      });
+    }
+  }, [gameOver, score, deckId]);
+
   const startGame = async () => {
     setIsLoading(true);
     try {
-      // Get cards from current deck and generate questions locally
-      const deckCards = currentDeck?.cards || [];
+      const deckCards = currentDeck?.cards as DeckCard[] || [];
       if (deckCards.length > 0) {
         const shuffled = [...deckCards].sort(() => Math.random() - 0.5).slice(0, 10);
-        const questions = shuffled.map((card: any) => ({
+        const questions = shuffled.map((card: DeckCard) => ({
           cardId: card.id,
           japanese: card.japanese,
           hiragana: card.hiragana,
@@ -117,9 +144,9 @@ const TimedChallenge: React.FC<{ deckId: string; onExit: () => void }> = ({ deck
           options: [
             card.english,
             ...deckCards
-              .filter((c: any) => c.id !== card.id)
+              .filter((c: DeckCard) => c.id !== card.id)
               .slice(0, 3)
-              .map((c: any) => c.english)
+              .map((c: DeckCard) => c.english)
           ].sort(() => Math.random() - 0.5)
         }));
         setQuestions(questions);
@@ -280,15 +307,25 @@ const MatchingPairs: React.FC<{ deckId: string; onExit: () => void }> = ({ deckI
     fetchDeck(deckId);
   }, [deckId]);
 
+  useEffect(() => {
+    if (gameWon && score > 0) {
+      supabase.from('game_results').insert({
+        deck_id: deckId,
+        game_type: 'matching_pairs',
+        score,
+        time_taken_seconds: moves * 2,
+      });
+    }
+  }, [gameWon, score, moves, deckId]);
+
   const startGame = async () => {
     setIsLoading(true);
     try {
-      // Get cards from current deck and generate matching pairs locally
       if (currentDeck?.cards && currentDeck.cards.length > 0) {
-        const selectedCards = [...currentDeck.cards].sort(() => Math.random() - 0.5).slice(0, 8);
+        const selectedCards = [...(currentDeck.cards as DeckCard[])].sort(() => Math.random() - 0.5).slice(0, 8);
         const gameCards: GameCard[] = [];
         
-        selectedCards.forEach((card: any) => {
+        selectedCards.forEach((card: DeckCard) => {
           gameCards.push({
             id: `${card.id}-japanese`,
             type: 'japanese',

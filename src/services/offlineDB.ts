@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Dexie, { Table } from 'dexie';
 
 export interface DBCard {

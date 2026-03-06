@@ -36,8 +36,9 @@ export const RegisterPage: React.FC = () => {
     try {
       await register(email, password, displayName);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +49,7 @@ export const RegisterPage: React.FC = () => {
     setIsGoogleLoading(true);
     try {
       await signInWithGoogle();
-    } catch (err: any) {
+    } catch {
       setError('Google signup failed. Please try again.');
       setIsGoogleLoading(false);
     }
